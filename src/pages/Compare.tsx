@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useCars } from "@/hooks/use-cars";
 import type { Car } from "@/data/cars";
+import { useDealershipCtx } from "@/contexts/DealershipContext";
 import Navbar from "@/components/Navbar";
 import { X, Loader2 } from "lucide-react";
 
 const Compare = () => {
-  const { data: cars = [], isLoading } = useCars();
+  const { slug } = useDealershipCtx();
+  const { data: cars = [], isLoading } = useCars(slug);
   const [selected, setSelected] = useState<string[]>([]);
 
   const toggleCar = (id: string) => {

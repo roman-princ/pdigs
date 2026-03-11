@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import { useCars } from "@/hooks/use-cars";
+import { useDealershipCtx } from "@/contexts/DealershipContext";
 
 const Estimate = () => {
-  const { data: cars = [] } = useCars();
+  const { slug } = useDealershipCtx();
+  const { data: cars = [] } = useCars(slug);
   const brands = useMemo(() => [...new Set(cars.map((c) => c.brand))], [cars]);
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");

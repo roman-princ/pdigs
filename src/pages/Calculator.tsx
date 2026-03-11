@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useCars } from "@/hooks/use-cars";
+import { useDealershipCtx } from "@/contexts/DealershipContext";
 import Navbar from "@/components/Navbar";
 import { Loader2 } from "lucide-react";
 
 const Calculator = () => {
-  const { data: cars = [], isLoading } = useCars();
+  const { slug } = useDealershipCtx();
+  const { data: cars = [], isLoading } = useCars(slug);
   const [carId, setCarId] = useState("");
   const [downPayment, setDownPayment] = useState(5000);
   const [months, setMonths] = useState(48);

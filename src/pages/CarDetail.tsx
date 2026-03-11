@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useCar } from "@/hooks/use-cars";
+import { useDealershipCtx } from "@/contexts/DealershipContext";
 import Navbar from "@/components/Navbar";
 import {
   ArrowLeft,
@@ -17,11 +18,13 @@ import { toast } from "sonner";
 
 const CarDetail = () => {
   const { id } = useParams();
+  const { slug } = useDealershipCtx();
   const { data: car, isLoading } = useCar(id);
   const [showTestDrive, setShowTestDrive] = useState(false);
   const [testDriveDate, setTestDriveDate] = useState("");
   const [testDriveName, setTestDriveName] = useState("");
   const [testDriveEmail, setTestDriveEmail] = useState("");
+  const [activeImage, setActiveImage] = useState(0);
 
   if (isLoading) {
     return (
@@ -41,7 +44,7 @@ const CarDetail = () => {
         <div className="container py-20 text-center">
           <p className="text-lg text-muted-foreground">Vehicle not found</p>
           <Link
-            to="/"
+            to={`/d/${slug}`}
             className="mt-4 inline-block text-sm text-primary hover:underline">
             ← Back to listings
           </Link>
@@ -79,21 +82,53 @@ const CarDetail = () => {
 
       <div className="container max-w-4xl py-8">
         <Link
-          to="/"
+          to={`/d/${slug}`}
           className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
 
-        {/* Image */}
-        <div
-          className={`aspect-[16/9] rounded-lg bg-gradient-to-br ${placeholderBg} flex items-center justify-center`}>
-          <div className="text-center">
-            <p className="font-display text-4xl font-bold text-foreground/40">
-              {car.brand}
-            </p>
-            <p className="text-lg text-muted-foreground">{car.model}</p>
+        {/* Image gallery */}
+        {car.images && car.images.length > 0 ? (
+          <div>
+            <div className="aspect-[16/9] overflow-hidden rounded-lg">
+              <img
+                src={car.images[activeImage]}
+                alt={`${car.brand} ${car.model}`}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            {car.images.length > 1 && (
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                {car.images.map((src, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(idx)}
+                    className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
+                      idx === activeImage
+                        ? "border-primary"
+                        : "border-transparent hover:border-muted-foreground/30"
+                    }`}>
+                    <img
+                      src={src}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        ) : (
+          <div
+            className={`aspect-[16/9] rounded-lg bg-gradient-to-br ${placeholderBg} flex items-center justify-center`}>
+            <div className="text-center">
+              <p className="font-display text-4xl font-bold text-foreground/40">
+                {car.brand}
+              </p>
+              <p className="text-lg text-muted-foreground">{car.model}</p>
+            </div>
+          </div>
+        )}
 
         {/* Info */}
         <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">

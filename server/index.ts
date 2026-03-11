@@ -4,13 +4,111 @@ import prisma from "./prisma.js";
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 
-// ── Cars CRUD ──────────────────────────────────────────────────────────────
+// ── Dealership CRUD ────────────────────────────────────────────────────────
 
-// List all cars (public)
-app.get("/api/cars", async (_req, res) => {
+// Register a new dealership
+app.post("/api/dealerships", async (req, res) => {
+  const { name, slug, ownerEmail, phone, address } = req.body;
+
+  if (!name || !slug || !ownerEmail) {
+    return res
+      .status(400)
+      .json({ error: "name, slug, and ownerEmail are required" });
+  }
+
+  // Validate slug format
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    return res.status(400).json({
+      error: "Slug must contain only lowercase letters, numbers, and hyphens",
+    });
+  }
+
+  const existing = await prisma.dealership.findUnique({ where: { slug } });
+  if (existing) {
+    return res
+      .status(409)
+      .json({ error: "A dealership with this slug already exists" });
+  }
+
+  const dealership = await prisma.dealership.create({
+    data: {
+      name,
+      slug,
+      ownerEmail,
+      phone: phone ?? "",
+      address: address ?? "",
+    },
+  });
+  res.status(201).json(dealership);
+});
+
+// Get dealership by slug (public – used for storefront)
+app.get("/api/dealerships/:slug", async (req, res) => {
+  const dealership = await prisma.dealership.findUnique({
+    where: { slug: req.params.slug },
+  });
+  if (!dealership)
+    return res.status(404).json({ error: "Dealership not found" });
+  res.json(dealership);
+});
+
+// Get dealership(s) by owner email
+app.get("/api/dealerships", async (req, res) => {
+  const email = req.query.ownerEmail as string | undefined;
+  if (!email) {
+    return res
+      .status(400)
+      .json({ error: "ownerEmail query parameter required" });
+  }
+  const dealerships = await prisma.dealership.findMany({
+    where: { ownerEmail: email },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(dealerships);
+});
+
+// Update dealership settings
+app.patch("/api/dealerships/:slug", async (req, res) => {
+  const {
+    name,
+    logoUrl,
+    primaryColor,
+    secondaryColor,
+    heroTitle,
+    heroSubtitle,
+    phone,
+    address,
+  } = req.body;
+  const dealership = await prisma.dealership.update({
+    where: { slug: req.params.slug },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(logoUrl !== undefined && { logoUrl }),
+      ...(primaryColor !== undefined && { primaryColor }),
+      ...(secondaryColor !== undefined && { secondaryColor }),
+      ...(heroTitle !== undefined && { heroTitle }),
+      ...(heroSubtitle !== undefined && { heroSubtitle }),
+      ...(phone !== undefined && { phone }),
+      ...(address !== undefined && { address }),
+    },
+  });
+  res.json(dealership);
+});
+
+// ── Cars CRUD (scoped to dealership) ───────────────────────────────────────
+
+// List all cars for a dealership (public)
+app.get("/api/dealerships/:slug/cars", async (req, res) => {
+  const dealership = await prisma.dealership.findUnique({
+    where: { slug: req.params.slug },
+  });
+  if (!dealership)
+    return res.status(404).json({ error: "Dealership not found" });
+
   const cars = await prisma.car.findMany({
+    where: { dealershipId: dealership.id },
     orderBy: { createdAt: "desc" },
   });
   res.json(cars);
@@ -23,8 +121,14 @@ app.get("/api/cars/:id", async (req, res) => {
   res.json(car);
 });
 
-// Create a car
-app.post("/api/cars", async (req, res) => {
+// Create a car for a dealership
+app.post("/api/dealerships/:slug/cars", async (req, res) => {
+  const dealership = await prisma.dealership.findUnique({
+    where: { slug: req.params.slug },
+  });
+  if (!dealership)
+    return res.status(404).json({ error: "Dealership not found" });
+
   const {
     brand,
     model,
@@ -55,6 +159,7 @@ app.post("/api/cars", async (req, res) => {
       description,
       images,
       features,
+      dealershipId: dealership.id,
     },
   });
   res.status(201).json(car);

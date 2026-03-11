@@ -6,6 +6,8 @@ import {
   useUpdateCar,
   useDeleteCar,
 } from "@/hooks/use-cars";
+import { useUpdateDealership } from "@/hooks/use-dealership";
+import { useDealershipCtx } from "@/contexts/DealershipContext";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import {
@@ -21,12 +23,15 @@ import {
   X as XIcon,
   LogOut,
   Loader2,
+  Star,
+  GripVertical,
+  ImagePlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const emptyForm: Omit<Car, "id" | "images"> = {
+const emptyForm: Omit<Car, "id" | "images" | "dealershipId"> = {
   brand: "",
   model: "",
   year: 2024,
@@ -42,15 +47,20 @@ const emptyForm: Omit<Car, "id" | "images"> = {
 };
 
 const Admin = () => {
-  const { data: listings = [], isLoading } = useCars();
-  const createCar = useCreateCar();
-  const updateCar = useUpdateCar();
-  const deleteCar = useDeleteCar();
+  const { slug } = useDealershipCtx();
+  const { data: listings = [], isLoading } = useCars(slug);
+  const createCar = useCreateCar(slug);
+  const updateCar = useUpdateCar(slug);
+  const deleteCar = useDeleteCar(slug);
+  const updateDealership = useUpdateDealership(slug);
   const { user, signOut } = useAuth();
   const [editing, setEditing] = useState<Car | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [featureInput, setFeatureInput] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"listings" | "customization">(
     "listings",
   );
@@ -74,15 +84,16 @@ const Admin = () => {
 
     try {
       if (editing) {
-        await updateCar.mutateAsync({ id: editing.id, ...form });
+        await updateCar.mutateAsync({ id: editing.id, ...form, images });
         toast.success("Listing updated");
         setEditing(null);
       } else {
-        await createCar.mutateAsync({ ...form, images: [] });
+        await createCar.mutateAsync({ ...form, images });
         toast.success("Listing created");
         setCreating(false);
       }
       setForm(emptyForm);
+      setImages([]);
     } catch (err: any) {
       toast.error(err.message || "Failed to save");
     }
@@ -118,6 +129,7 @@ const Admin = () => {
       description: car.description,
       features: car.features,
     });
+    setImages(car.images ?? []);
   };
 
   const addFeature = () => {
@@ -128,6 +140,49 @@ const Admin = () => {
       }));
       setFeatureInput("");
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 5_000_000) {
+        toast.error(`"${file.name}" is over 5 MB — skipped`);
+        continue;
+      }
+      const reader = new FileReader();
+      reader.onload = () =>
+        setImages((prev) => [...prev, reader.result as string]);
+      reader.readAsDataURL(file);
+    }
+    // reset input so re-selecting the same file works
+    e.target.value = "";
+  };
+
+  const setAsPrimary = (idx: number) => {
+    setImages((prev) => {
+      const next = [...prev];
+      const [img] = next.splice(idx, 1);
+      next.unshift(img);
+      return next;
+    });
+  };
+
+  const removeImage = (idx: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleDragStart = (idx: number) => setDraggingIdx(idx);
+
+  const handleDrop = (targetIdx: number) => {
+    if (draggingIdx === null || draggingIdx === targetIdx) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [img] = next.splice(draggingIdx, 1);
+      next.splice(targetIdx, 0, img);
+      return next;
+    });
+    setDraggingIdx(null);
   };
 
   const showForm = creating || editing;
@@ -359,15 +414,40 @@ const Admin = () => {
               </div>
             </div>
 
-            {/* Reset */}
-            <button
-              onClick={() => {
-                resetTheme();
-                toast.success("Theme reset to defaults");
-              }}
-              className="flex items-center gap-2 rounded-lg border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
-              <RotateCcw className="h-4 w-4" /> Reset to Defaults
-            </button>
+            {/* Save + Reset */}
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await updateDealership.mutateAsync({
+                      name: dealershipName,
+                      logoUrl,
+                      primaryColor,
+                      secondaryColor,
+                      heroTitle,
+                      heroSubtitle,
+                    });
+                    toast.success("Customization saved");
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to save");
+                  }
+                }}
+                disabled={updateDealership.isPending}
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                {updateDealership.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                Save Customization
+              </button>
+              <button
+                onClick={() => {
+                  resetTheme();
+                  toast.success("Theme reset to defaults");
+                }}
+                className="flex items-center gap-2 rounded-lg border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
+                <RotateCcw className="h-4 w-4" /> Reset to Defaults
+              </button>
+            </div>
           </div>
         )}
 
@@ -381,6 +461,7 @@ const Admin = () => {
                     setCreating(true);
                     setEditing(null);
                     setForm(emptyForm);
+                    setImages([]);
                   }}
                   className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
                   <Plus className="h-4 w-4" /> Add Listing
@@ -576,6 +657,73 @@ const Admin = () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Images */}
+                  <div className="sm:col-span-2">
+                    <label className="text-sm font-medium">Images</label>
+                    <p className="text-xs text-muted-foreground">
+                      First image is the cover photo. Drag to reorder or click
+                      the star to set as cover.
+                    </p>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      {images.map((src, idx) => (
+                        <div
+                          key={idx}
+                          draggable
+                          onDragStart={() => handleDragStart(idx)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => handleDrop(idx)}
+                          className={`group relative h-28 w-28 shrink-0 overflow-hidden rounded-lg border-2 ${
+                            idx === 0
+                              ? "border-primary"
+                              : "border-transparent hover:border-muted-foreground/30"
+                          }`}>
+                          <img
+                            src={src}
+                            alt={`Car image ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          {idx === 0 && (
+                            <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                              Cover
+                            </span>
+                          )}
+                          <div className="absolute inset-0 flex items-start justify-end gap-0.5 bg-black/0 p-1 opacity-0 transition-opacity group-hover:bg-black/30 group-hover:opacity-100">
+                            <button
+                              type="button"
+                              onClick={() => setAsPrimary(idx)}
+                              title="Set as cover"
+                              className="rounded bg-black/50 p-1 text-white hover:bg-black/70">
+                              <Star className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeImage(idx)}
+                              title="Remove"
+                              className="rounded bg-black/50 p-1 text-white hover:bg-destructive">
+                              <XIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <GripVertical className="absolute bottom-1 left-1 h-4 w-4 text-white/70 opacity-0 group-hover:opacity-100" />
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                        className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                        <ImagePlus className="h-6 w-6" />
+                        <span className="text-xs font-medium">Add</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-4 flex gap-2">
                   <button
@@ -592,6 +740,7 @@ const Admin = () => {
                       setCreating(false);
                       setEditing(null);
                       setForm(emptyForm);
+                      setImages([]);
                     }}
                     className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-secondary">
                     Cancel
@@ -648,7 +797,7 @@ const Admin = () => {
                         <td className="p-3">
                           <div className="flex items-center justify-end gap-1">
                             <Link
-                              to={`/car/${car.id}`}
+                              to={`/d/${slug}/car/${car.id}`}
                               className="rounded p-1.5 hover:bg-secondary"
                               title="View">
                               <Eye className="h-4 w-4 text-muted-foreground" />

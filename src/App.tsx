@@ -5,7 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { DealershipProvider } from "@/contexts/DealershipContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Landing from "./pages/Landing.tsx";
 import Index from "./pages/Index.tsx";
 import CarDetail from "./pages/CarDetail.tsx";
 import Compare from "./pages/Compare.tsx";
@@ -26,20 +28,35 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/car/:id" element={<CarDetail />} />
-              <Route path="/compare" element={<Compare />} />
-              <Route path="/calculator" element={<Calculator />} />
-              <Route path="/estimate" element={<Estimate />} />
+              {/* SaaS landing page */}
+              <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
+
+              {/* Dealership-scoped routes */}
               <Route
-                path="/admin"
+                path="/d/:slug/*"
                 element={
-                  <ProtectedRoute>
-                    <Admin />
-                  </ProtectedRoute>
+                  <DealershipProvider>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/car/:id" element={<CarDetail />} />
+                      <Route path="/compare" element={<Compare />} />
+                      <Route path="/calculator" element={<Calculator />} />
+                      <Route path="/estimate" element={<Estimate />} />
+                      <Route
+                        path="/admin"
+                        element={
+                          <ProtectedRoute>
+                            <Admin />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </DealershipProvider>
                 }
               />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

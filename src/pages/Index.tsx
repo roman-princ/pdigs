@@ -2,12 +2,14 @@ import { useState, useMemo } from "react";
 import { fuelTypes } from "@/data/cars";
 import { useCars } from "@/hooks/use-cars";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useDealershipCtx } from "@/contexts/DealershipContext";
 import CarCard from "@/components/CarCard";
 import Navbar from "@/components/Navbar";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 
 const Index = () => {
-  const { data: cars = [], isLoading } = useCars();
+  const { slug } = useDealershipCtx();
+  const { data: cars = [], isLoading } = useCars(slug);
   const { heroTitle, heroSubtitle } = useTheme();
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState("");

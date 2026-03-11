@@ -6,6 +6,25 @@ datasource db {
   provider = "postgresql"
 }
 
+model Dealership {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  slug           String   @unique
+  ownerEmail     String   @map("owner_email")
+  logoUrl        String?  @map("logo_url")
+  primaryColor   String   @default("#2563eb") @map("primary_color")
+  secondaryColor String   @default("#f97316") @map("secondary_color")
+  heroTitle      String   @default("Find Your Perfect Drive") @map("hero_title")
+  heroSubtitle   String   @default("Browse our curated selection of premium vehicles.") @map("hero_subtitle")
+  phone          String   @default("")
+  address        String   @default("")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  cars Car[]
+
+  @@map("dealerships")
+}
+
 model Car {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   brand        String
@@ -22,6 +41,9 @@ model Car {
   images       String[] @default([])
   features     String[] @default([])
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  dealershipId String     @map("dealership_id") @db.Uuid
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
 
   @@map("cars")
 }

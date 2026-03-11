@@ -18,18 +18,17 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
 
 // ── Queries ────────────────────────────────────────────────────────────────
 
-const CARS_KEY = ["cars"] as const;
-
-export function useCars() {
+export function useCars(slug: string | undefined) {
   return useQuery({
-    queryKey: CARS_KEY,
-    queryFn: () => apiFetch<Car[]>("/api/cars"),
+    queryKey: ["cars", slug],
+    queryFn: () => apiFetch<Car[]>(`/api/dealerships/${slug}/cars`),
+    enabled: !!slug,
   });
 }
 
 export function useCar(id: string | undefined) {
   return useQuery({
-    queryKey: ["cars", id],
+    queryKey: ["car", id],
     queryFn: () => apiFetch<Car | null>(`/api/cars/${id}`),
     enabled: !!id,
   });
@@ -37,19 +36,19 @@ export function useCar(id: string | undefined) {
 
 // ── Mutations ──────────────────────────────────────────────────────────────
 
-export function useCreateCar() {
+export function useCreateCar(slug: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (car: Omit<Car, "id">) =>
-      apiFetch<Car>("/api/cars", {
+    mutationFn: (car: Omit<Car, "id" | "dealershipId">) =>
+      apiFetch<Car>(`/api/dealerships/${slug}/cars`, {
         method: "POST",
         body: JSON.stringify(car),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CARS_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cars", slug] }),
   });
 }
 
-export function useUpdateCar() {
+export function useUpdateCar(slug: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...updates }: Partial<Car> & { id: string }) =>
@@ -57,15 +56,15 @@ export function useUpdateCar() {
         method: "PATCH",
         body: JSON.stringify(updates),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CARS_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cars", slug] }),
   });
 }
 
-export function useDeleteCar() {
+export function useDeleteCar(slug: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch<void>(`/api/cars/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CARS_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cars", slug] }),
   });
 }

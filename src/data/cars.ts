@@ -1,3 +1,18 @@
+export interface Dealership {
+  id: string;
+  name: string;
+  slug: string;
+  ownerEmail: string;
+  logoUrl: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  phone: string;
+  address: string;
+  createdAt: string;
+}
+
 export interface Car {
   id: string;
   brand: string;
@@ -13,6 +28,7 @@ export interface Car {
   description: string;
   images: string[];
   features: string[];
+  dealershipId: string;
 }
 
 export const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"] as const;

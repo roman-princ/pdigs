@@ -148,9 +148,27 @@ const cars = [
 
 async function main() {
   console.log("Seeding database...");
+
+  // Create a demo dealership
   await prisma.car.deleteMany();
-  const result = await prisma.car.createMany({ data: cars });
-  console.log(`Seeded ${result.count} cars`);
+  await prisma.dealership.deleteMany();
+
+  const dealership = await prisma.dealership.create({
+    data: {
+      name: "AutoVault Demo",
+      slug: "demo",
+      ownerEmail: "demo@autovault.com",
+      phone: "+1 (555) 123-4567",
+      address: "123 Main St, Auto City",
+    },
+  });
+
+  const result = await prisma.car.createMany({
+    data: cars.map((c) => ({ ...c, dealershipId: dealership.id })),
+  });
+  console.log(
+    `Seeded dealership "${dealership.name}" with ${result.count} cars`,
+  );
 }
 
 main()
