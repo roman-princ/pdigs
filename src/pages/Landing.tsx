@@ -110,17 +110,24 @@ const Landing = () => {
               <Compass className="h-4 w-4" /> Discover
             </Link>
             {user ? (
-              <Link
-                to="#register"
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document
-                    .getElementById("register")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}>
-                Register Dealership
-              </Link>
+              <>
+                <Link
+                  to="/account"
+                  className="hidden rounded-lg border bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary sm:inline-flex">
+                  My Account
+                </Link>
+                <Link
+                  to="#register"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document
+                      .getElementById("register")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}>
+                  Register Dealership
+                </Link>
+              </>
             ) : (
               <Link
                 to="/login"
@@ -147,15 +154,22 @@ const Landing = () => {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             {user ? (
-              <button
-                onClick={() =>
-                  document
-                    .getElementById("register")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </button>
+              <>
+                <Link
+                  to="/account"
+                  className="flex items-center gap-2 rounded-lg border bg-card px-6 py-3 text-sm font-semibold hover:bg-secondary">
+                  My Account
+                </Link>
+                <button
+                  onClick={() =>
+                    document
+                      .getElementById("register")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+                  Get Started <ArrowRight className="h-4 w-4" />
+                </button>
+              </>
             ) : (
               <Link
                 to="/login"

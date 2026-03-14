@@ -18,6 +18,7 @@ import About from "./pages/About.tsx";
 import SalesContract from "./pages/SalesContract.tsx";
 import Admin from "./pages/Admin.tsx";
 import Login from "./pages/Login.tsx";
+import Account from "@/pages/Account";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,14 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/discover" element={<DiscoverDealerships />} />
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/account"
+                element={
+                  <ProtectedRoute>
+                    <Account />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Dealership-scoped routes */}
               <Route
