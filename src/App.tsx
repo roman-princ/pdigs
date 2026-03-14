@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DealershipProvider } from "@/contexts/DealershipContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import DealershipOwnerRoute from "@/components/DealershipOwnerRoute";
 import Landing from "./pages/Landing.tsx";
 import DiscoverDealerships from "./pages/DiscoverDealerships.tsx";
 import Index from "./pages/Index.tsx";
@@ -69,9 +70,9 @@ const App = () => (
                       <Route
                         path="/admin"
                         element={
-                          <ProtectedRoute>
+                          <DealershipOwnerRoute>
                             <Admin />
-                          </ProtectedRoute>
+                          </DealershipOwnerRoute>
                         }
                       />
                       <Route path="*" element={<NotFound />} />

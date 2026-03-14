@@ -3,12 +3,16 @@ import { Car as CarIcon, Settings, Menu, X, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useDealershipCtx } from "@/contexts/DealershipContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { dealershipName, logoUrl, darkMode, toggleDarkMode } = useTheme();
-  const { slug } = useDealershipCtx();
+  const { slug, dealership } = useDealershipCtx();
+  const { user } = useAuth();
   const base = `/d/${slug}`;
+  const isOwner =
+    user?.email?.toLowerCase() === dealership.ownerEmail?.toLowerCase();
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
@@ -55,12 +59,14 @@ const Navbar = () => {
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
             About Us
           </Link>
-          <Link
-            to={`${base}/admin`}
-            className="flex items-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80">
-            <Settings className="h-3.5 w-3.5" />
-            Admin
-          </Link>
+          {isOwner && (
+            <Link
+              to={`${base}/admin`}
+              className="flex items-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80">
+              <Settings className="h-3.5 w-3.5" />
+              Admin
+            </Link>
+          )}
           <button
             onClick={toggleDarkMode}
             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
@@ -119,12 +125,14 @@ const Navbar = () => {
               className="text-sm font-medium">
               About Us
             </Link>
-            <Link
-              to={`${base}/admin`}
-              onClick={() => setMobileOpen(false)}
-              className="text-sm font-medium">
-              Admin Panel
-            </Link>
+            {isOwner && (
+              <Link
+                to={`${base}/admin`}
+                onClick={() => setMobileOpen(false)}
+                className="text-sm font-medium">
+                Admin Panel
+              </Link>
+            )}
             <button
               onClick={toggleDarkMode}
               className="flex items-center gap-2 text-sm font-medium">
