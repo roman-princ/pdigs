@@ -126,6 +126,43 @@ export function useCreateCar(slug: string | undefined) {
   });
 }
 
+export function useCreateCarsBatch(slug: string | undefined) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (cars: Array<Omit<Car, "id" | "dealershipId">>) => {
+      if (cars.length === 0) return [];
+
+      const dealershipId = await getDealershipIdBySlug(slug!);
+      const payload = cars.map((car) => ({
+        brand: car.brand,
+        model: car.model,
+        year: car.year,
+        price: car.price,
+        mileage: car.mileage,
+        fuel: car.fuel,
+        transmission: car.transmission,
+        power: car.power,
+        color: car.color,
+        condition: car.condition,
+        description: car.description,
+        images: car.images,
+        features: car.features,
+        dealership_id: dealershipId,
+      }));
+
+      const { data, error } = await supabase
+        .from("cars")
+        .insert(payload)
+        .select("*");
+
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as CarRow[]).map(mapCar);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cars", slug] }),
+  });
+}
+
 export function useUpdateCar(slug: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

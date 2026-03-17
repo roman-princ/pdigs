@@ -3,6 +3,7 @@ import { Car, fuelTypes, transmissionTypes, conditions } from "@/data/cars";
 import {
   useCars,
   useCreateCar,
+  useCreateCarsBatch,
   useUpdateCar,
   useDeleteCar,
 } from "@/hooks/use-cars";
@@ -38,6 +39,12 @@ import {
   useClearDealershipAnalytics,
 } from "@/hooks/use-analytics";
 import {
+  downloadExcelTemplate,
+  downloadJsonTemplate,
+  parseListingsFromExcelFile,
+  parseListingsFromJsonText,
+} from "@/lib/listing-import";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -70,6 +77,7 @@ const Admin = () => {
     error: bookingsError,
   } = useDealershipBookings(dealership.id);
   const createCar = useCreateCar(slug);
+  const createCarsBatch = useCreateCarsBatch(slug);
   const updateCar = useUpdateCar(slug);
   const deleteCar = useDeleteCar(slug);
   const updateDealership = useUpdateDealership(slug);
@@ -80,6 +88,8 @@ const Admin = () => {
   const [featureInput, setFeatureInput] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const jsonImportInputRef = useRef<HTMLInputElement>(null);
+  const excelImportInputRef = useRef<HTMLInputElement>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "listings" | "customization"
@@ -283,6 +293,58 @@ const Admin = () => {
       updateTheme({ logoUrl: url }); // live navbar preview
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImportedListings = async (
+    source: "JSON" | "Excel",
+    listings: Omit<Car, "id" | "dealershipId">[],
+    errors: string[],
+  ) => {
+    if (listings.length === 0) {
+      toast.error(`No valid listings found in ${source} file`);
+      if (errors.length > 0) {
+        toast.error(errors.slice(0, 2).join(" | "));
+      }
+      return;
+    }
+
+    try {
+      await createCarsBatch.mutateAsync(listings);
+      toast.success(`Imported ${listings.length} listings from ${source}`);
+
+      if (errors.length > 0) {
+        toast.warning(`${errors.length} rows were skipped`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import failed");
+    }
+  };
+
+  const handleJsonImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const result = parseListingsFromJsonText(text);
+      await handleImportedListings("JSON", result.listings, result.errors);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invalid JSON file");
+    }
+  };
+
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    try {
+      const result = await parseListingsFromExcelFile(file);
+      await handleImportedListings("Excel", result.listings, result.errors);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invalid Excel file");
+    }
   };
 
   return (
@@ -867,7 +929,48 @@ const Admin = () => {
         {/* ── Listings Tab ──────────────────────────────────────────────── */}
         {activeTab === "listings" && (
           <>
-            <div className="mt-6 flex items-center justify-end">
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={jsonImportInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  onChange={handleJsonImport}
+                  className="hidden"
+                />
+                <input
+                  ref={excelImportInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  onChange={handleExcelImport}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => downloadExcelTemplate()}
+                  className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-secondary">
+                  Download Excel Template
+                </button>
+                <button
+                  onClick={() => downloadJsonTemplate()}
+                  className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-secondary">
+                  Download JSON Template
+                </button>
+                <button
+                  onClick={() => jsonImportInputRef.current?.click()}
+                  disabled={createCarsBatch.isPending}
+                  className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50">
+                  Import JSON
+                </button>
+                <button
+                  onClick={() => excelImportInputRef.current?.click()}
+                  disabled={createCarsBatch.isPending}
+                  className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50">
+                  {createCarsBatch.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  Import Excel
+                </button>
+              </div>
               {!showForm && (
                 <button
                   onClick={() => {
