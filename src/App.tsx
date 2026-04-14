@@ -1,4 +1,9 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +11,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DealershipProvider } from "@/contexts/DealershipContext";
+import {
+  isSupabaseOutageError,
+  redirectToServerErrorPage,
+} from "@/lib/error-routing";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DealershipOwnerRoute from "@/components/DealershipOwnerRoute";
 import Landing from "./pages/Landing.tsx";
@@ -21,8 +30,24 @@ import Admin from "./pages/Admin.tsx";
 import Login from "./pages/Login.tsx";
 import Account from "@/pages/Account";
 import NotFound from "./pages/NotFound.tsx";
+import ServerError from "./pages/ServerError.tsx";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (isSupabaseOutageError(error)) {
+        redirectToServerErrorPage();
+      }
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      if (isSupabaseOutageError(error)) {
+        redirectToServerErrorPage();
+      }
+    },
+  }),
+});
 const routerBase = import.meta.env.BASE_URL;
 
 const App = () => (
@@ -36,6 +61,7 @@ const App = () => (
             <Routes>
               {/* SaaS landing page */}
               <Route path="/" element={<Landing />} />
+              <Route path="/500" element={<ServerError />} />
               <Route path="/discover" element={<DiscoverDealerships />} />
               <Route path="/login" element={<Login />} />
               <Route
