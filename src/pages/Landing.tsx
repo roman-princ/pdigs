@@ -163,7 +163,7 @@ const Landing = () => {
           </h1>
           <p className="mt-4 max-w-xl text-lg text-muted-foreground">
             Launch your own branded car dealership website in minutes. Manage
-            inventory, customize your storefront, and start selling — no coding
+            inventory, customize your storefront, and start selling - no coding
             required.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -255,7 +255,7 @@ const Landing = () => {
             Register Your Dealership
           </h2>
           <p className="mt-2 text-center text-muted-foreground">
-            Set up your dealership in seconds — you can customize everything
+            Set up your dealership in seconds - you can customize everything
             later.
           </p>
 

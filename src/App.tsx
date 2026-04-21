@@ -4,13 +4,15 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DealershipProvider } from "@/contexts/DealershipContext";
+import RouteTransition from "@/components/RouteTransition";
 import {
   isSupabaseOutageError,
   redirectToServerErrorPage,
@@ -50,6 +52,172 @@ const queryClient = new QueryClient({
 });
 const routerBase = import.meta.env.BASE_URL;
 
+function getTopLevelRouteKey(pathname: string): string {
+  const dealershipScope = pathname.match(/^\/d\/[^/]+/);
+  return dealershipScope ? dealershipScope[0] : pathname;
+}
+
+const AnimatedDealershipRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.pathname}>
+        <Route
+          path="/"
+          element={
+            <RouteTransition>
+              <Index />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/car/:id"
+          element={
+            <RouteTransition>
+              <CarDetail />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/compare"
+          element={
+            <RouteTransition>
+              <Compare />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/calculator"
+          element={
+            <RouteTransition>
+              <Calculator />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/estimate"
+          element={
+            <RouteTransition>
+              <Estimate />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <RouteTransition>
+              <About />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/car/:id/contract"
+          element={
+            <RouteTransition>
+              <ProtectedRoute>
+                <SalesContract />
+              </ProtectedRoute>
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <RouteTransition>
+              <DealershipOwnerRoute>
+                <Admin />
+              </DealershipOwnerRoute>
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <RouteTransition>
+              <NotFound />
+            </RouteTransition>
+          }
+        />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
+const AnimatedAppRoutes = () => {
+  const location = useLocation();
+  const routeKey = getTopLevelRouteKey(location.pathname);
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={routeKey}>
+        {/* SaaS landing page */}
+        <Route
+          path="/"
+          element={
+            <RouteTransition>
+              <Landing />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/500"
+          element={
+            <RouteTransition>
+              <ServerError />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/discover"
+          element={
+            <RouteTransition>
+              <DiscoverDealerships />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <RouteTransition>
+              <Login />
+            </RouteTransition>
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <RouteTransition>
+              <ProtectedRoute>
+                <Account />
+              </ProtectedRoute>
+            </RouteTransition>
+          }
+        />
+
+        {/* Dealership-scoped routes */}
+        <Route
+          path="/d/:slug/*"
+          element={
+            <DealershipProvider>
+              <AnimatedDealershipRoutes />
+            </DealershipProvider>
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            <RouteTransition>
+              <NotFound />
+            </RouteTransition>
+          }
+        />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -58,57 +226,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter basename={routerBase}>
-            <Routes>
-              {/* SaaS landing page */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/500" element={<ServerError />} />
-              <Route path="/discover" element={<DiscoverDealerships />} />
-              <Route path="/login" element={<Login />} />
-              <Route
-                path="/account"
-                element={
-                  <ProtectedRoute>
-                    <Account />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Dealership-scoped routes */}
-              <Route
-                path="/d/:slug/*"
-                element={
-                  <DealershipProvider>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/car/:id" element={<CarDetail />} />
-                      <Route path="/compare" element={<Compare />} />
-                      <Route path="/calculator" element={<Calculator />} />
-                      <Route path="/estimate" element={<Estimate />} />
-                      <Route path="/about" element={<About />} />
-                      <Route
-                        path="/car/:id/contract"
-                        element={
-                          <ProtectedRoute>
-                            <SalesContract />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin"
-                        element={
-                          <DealershipOwnerRoute>
-                            <Admin />
-                          </DealershipOwnerRoute>
-                        }
-                      />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </DealershipProvider>
-                }
-              />
-
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AnimatedAppRoutes />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
