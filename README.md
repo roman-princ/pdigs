@@ -1,5 +1,14 @@
 # AutoVault — Whitelabel Car Dealership SaaS
 
+> **!!! DEMO ADMIN ACCOUNT — FOR REVIEW !!!**
+>
+> - **Email:** `admin@pdigs.test`
+> - **Password:** `AdminPass123!`
+> - **Dealership storefront:** `/d/riverside`
+> - **Admin dashboard:** `/d/riverside/admin`
+>
+> Sign in at `/login` to access the admin dashboard with pre-seeded cars, bookings, and analytics.
+
 A multi-tenant SaaS platform that lets independent car dealerships launch branded online storefronts without any coding. Built with React, TypeScript, Vite, Tailwind CSS, shadcn/ui, and Supabase.
 
 ## Features
